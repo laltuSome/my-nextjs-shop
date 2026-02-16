@@ -14,7 +14,7 @@ const sliderImages = [
 ]
 
 // Animated God names list
-const godNames = ["Laddu Gopal", "Radha Rani", "Kanha Ji", "Gopal"];
+const godNames = ["Laddu Gopal", "Radha Rani", "Kanha Ji", "Gopal Ji"];
 
 export function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0)
