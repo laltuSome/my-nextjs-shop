@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useState, useMemo } from "react"
-import { Phone, ChevronLeft, Truck, Shield, RotateCcw } from "lucide-react"
+import { Phone, ChevronLeft, Truck, Shield, RotateCcw, Maximize2, X } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,7 @@ interface ProductDetailProps {
 
 export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
   const [selectedImage, setSelectedImage] = useState(0)
+  const [showSizeGuide, setShowSizeGuide] = useState(false) // পপআপ স্টেট
 
   // ১. ইমেজ গ্যালারি সেটআপ
   const allImages = useMemo(() => {
@@ -31,7 +32,7 @@ export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
     ]
   }, [product])
 
-  // ২. প্রাইস লজিক (সরাসরি মেইন প্রোডাক্ট থেকে)
+  // ২. প্রাইস লজিক
   const currentPrice = product.price
   const currentSalePrice = product.salePrice
   const hasDiscount = currentSalePrice && currentSalePrice < currentPrice
@@ -48,7 +49,7 @@ export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
   }, [product, currentPrice, currentSalePrice])
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8">
+    <section className="mx-auto max-w-7xl px-4 py-8 relative">
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-primary">Home</Link>
@@ -121,10 +122,21 @@ export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
 
           <Separator />
 
-          {/* ৪. Size Selection (এক প্রোডাক্ট থেকে অন্য প্রোডাক্টে লিঙ্ক করবে) */}
-          {variants.length > 1 && (
-            <div className="flex flex-col gap-4">
+          {/* Size Selection */}
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center">
               <span className="text-sm font-bold text-foreground uppercase tracking-wider">Available Sizes:</span>
+              
+              {/* Size Guide Trigger */}
+              <button 
+                onClick={() => setShowSizeGuide(true)}
+                className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+              >
+                <Maximize2 className="h-3 w-3" /> Size Guide
+              </button>
+            </div>
+
+            {variants.length > 1 ? (
               <div className="flex flex-wrap gap-3">
                 {variants.map((v, index) => (
                   <Link
@@ -132,7 +144,7 @@ export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
                     href={`/product/${v.slug}`}
                     className={`min-w-[60px] px-4 py-2 rounded-lg border-2 font-bold transition-all text-center flex items-center justify-center ${
                       v.slug === product.slug
-                        ? "border-primary bg-primary/10 text-primary" // বর্তমানে যে সাইজ ওপেন আছে
+                        ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-muted-foreground hover:border-primary"
                     }`}
                   >
@@ -140,16 +152,18 @@ export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
                   </Link>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              product.size && (
+                <div className="flex items-center gap-3">
+                  <span className="px-4 py-2 rounded-lg border-2 border-primary bg-primary/10 text-primary font-bold">
+                    {product.size}
+                  </span>
+                </div>
+              )
+            )}
+          </div>
 
           <div className="flex flex-col gap-3">
-            {product.size && !variants.length && (
-               <div className="flex items-center gap-3">
-                 <span className="w-20 text-sm font-medium text-muted-foreground">Size</span>
-                 <span className="text-sm text-foreground">{product.size}</span>
-               </div>
-            )}
             {product.material && (
               <div className="flex items-center gap-3">
                 <span className="w-20 text-sm font-medium text-muted-foreground">Material</span>
@@ -160,7 +174,7 @@ export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
 
           <Separator />
 
-          {/* WhatsApp Book Button */}
+          {/* WhatsApp Button */}
           <a href={waLink} target="_blank" rel="noopener noreferrer">
             <Button size="lg" className="w-full bg-[#25D366] text-[#fff] hover:bg-[#1da851] gap-2 text-lg py-7 rounded-xl shadow-lg shadow-green-200">
               <Phone className="h-5 w-5" />
@@ -195,6 +209,39 @@ export function ProductDetail({ product, variants = [] }: ProductDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* --- Size Guide Popup Modal --- */}
+      {showSizeGuide && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl scale-in-center animate-in zoom-in duration-300">
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowSizeGuide(false)}
+              className="absolute right-4 top-4 z-10 p-2 bg-white/90 rounded-full hover:bg-white shadow-md transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-800" />
+            </button>
+            
+            {/* Image Content */}
+            <div className="overflow-y-auto max-h-[90vh] p-2">
+               <div className="relative w-full aspect-[3/4] md:aspect-square">
+                <Image 
+                  src={product.size_guide || "/images/default-size-guide.jpg"} 
+                  alt="Size Guide"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="p-4 text-center border-t">
+                <p className="font-bold text-gray-800">Size Measurement Guide</p>
+                <p className="text-xs text-muted-foreground">Please refer to this chart before placing your order.</p>
+              </div>
+            </div>
+          </div>
+          {/* Overlay Click to Close */}
+          <div className="absolute inset-0 -z-10" onClick={() => setShowSizeGuide(false)}></div>
+        </div>
+      )}
     </section>
   )
 }

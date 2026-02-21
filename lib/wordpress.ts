@@ -11,6 +11,17 @@ function transformWPProduct(wp: WPProduct): Product {
   const media = wp._embedded?.["wp:featuredmedia"]?.[0]
   const terms = wp._embedded?.["wp:term"]?.[0] || []
   
+  // টাইপস্ক্রিপ্ট এরর এড়াতে acf কে any হিসেবে নিয়ে ডেটা চেক করা
+  const acf = wp.acf as any;
+
+  // Size Guide ইমেজ হ্যান্ডেল করা
+  let sizeGuideImg = "";
+  if (acf?.size_guide) {
+    sizeGuideImg = typeof acf.size_guide === 'object' 
+      ? acf.size_guide?.url 
+      : acf.size_guide;
+  }
+
   return {
     id: wp.id,
     slug: wp.slug,
@@ -18,19 +29,21 @@ function transformWPProduct(wp: WPProduct): Product {
     description: wp.content.rendered,
     excerpt: wp.excerpt.rendered.replace(/<[^>]+>/g, ""),
     image: media?.source_url || "/images/products/dress-1.jpg",
-    gallery: wp.acf?.product_gallery?.map((img: any) => ({ url: img.url, alt: img.alt })) || [],
+    gallery: acf?.product_gallery?.map((img: any) => ({ url: img.url, alt: img.alt })) || [],
     
-    // সরাসরি ACF ফিল্ড থেকে ডেটা নেওয়া (আপনার বানানো price, size, sale_price)
-    price: Number(wp.acf?.price || 0),
-    salePrice: wp.acf?.sale_price ? Number(wp.acf.sale_price) : undefined,
-    size: wp.acf?.size || undefined,
+    price: Number(acf?.price || 0),
+    salePrice: acf?.sale_price ? Number(acf.sale_price) : undefined,
+    size: acf?.size || undefined,
     
-    material: wp.acf?.material || undefined,
-    isBestseller: wp.acf?.is_bestseller || false,
-    isNewArrival: wp.acf?.is_new_arrival || false,
-    isCombo: wp.acf?.is_combo || false, 
-    thakur_type: wp.acf?.thakur_type || "", 
-    rating: wp.acf?.product_rating || 0,   
+    // সাইজ গাইড ইমেজ: এসিএফ না থাকলে ডিফল্ট ইমেজ
+    size_guide: sizeGuideImg || "/images/default-size-guide.jpg", 
+
+    material: acf?.material || undefined,
+    isBestseller: acf?.is_bestseller || false,
+    isNewArrival: acf?.is_new_arrival || false,
+    isCombo: acf?.is_combo || false, 
+    thakur_type: acf?.thakur_type || "", 
+    rating: acf?.product_rating || 0,   
     
     categories: terms.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
   }
@@ -38,25 +51,21 @@ function transformWPProduct(wp: WPProduct): Product {
 
 /**
  * একই নামের অন্য সাইজের প্রোডাক্টগুলো খুঁজে বের করার ফাংশন
- * এটি টাইটেলের প্রথম অংশ দিয়ে সার্চ করে অন্য প্রোডাক্টের লিঙ্ক নিয়ে আসে
  */
 export async function getProductVariants(currentProduct: Product): Promise<{size: string, slug: string}[]> {
   try {
-    // টাইটেল থেকে মেইন নামটা বের করা (যেমন: "Laddu Gopal - 5" থেকে "Laddu Gopal" নেওয়া)
-    // হাইফেন (-) বা স্পেস থাকলে তার আগের অংশটুকু নেবে
     const mainTitle = currentProduct.title.split('-')[0].split('|')[0].trim();
     
     const res = await fetch(`${WP_API_URL}/products?search=${encodeURIComponent(mainTitle)}&_embed=true`);
     const data: WPProduct[] = await res.json();
     
-    // বর্তমান লিস্ট থেকে সাইজ এবং স্লাগ বের করা
     return data
-      .filter(wp => wp.acf?.size) // যাদের সাইজ দেওয়া আছে শুধু তাদের নেবে
+      .filter(wp => wp.acf?.size) 
       .map(wp => ({
         size: String(wp.acf.size),
         slug: wp.slug
       }))
-      .sort((a, b) => parseFloat(a.size) - parseFloat(b.size)); // সাইজ অনুযায়ী সাজানো
+      .sort((a, b) => parseFloat(a.size) - parseFloat(b.size)); 
   } catch (error) {
     console.error("Variant fetch error:", error);
     return [];
@@ -103,14 +112,14 @@ export async function getProducts(params?: {
 
     if (params?.bestseller) products = products.filter((p) => p.isBestseller)
     if (params?.newArrival) products = products.filter((p) => p.isNewArrival)
-    if (params?.combo) products = products.filter((p) => p.isCombo === true)
+    if (params?.combo) products = products.filter((p) => (p as any).isCombo === true)
 
     if (params?.material) {
         products = products.filter((p) => p.material?.toLowerCase() === params.material?.toLowerCase())
     }
 
     if (params?.thakur) {
-        products = products.filter((p) => p.thakur_type?.toLowerCase() === params.thakur?.toLowerCase())
+        products = products.filter((p) => (p as any).thakur_type?.toLowerCase() === params.thakur?.toLowerCase())
     }
 
     const perPage = params?.perPage || 100

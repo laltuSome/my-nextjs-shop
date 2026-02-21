@@ -10,21 +10,29 @@ export interface WPProduct {
     price: number
     sale_price?: number
     product_gallery?: { url: string; alt: string }[]
-    // --- Variants (Repeater Field) Support ---
-    product_variants?: {
-      variant_size: string;
-      variant_price: number;
-      variant_sale_price?: number;
-      variant_image?: string | { url: string }; // প্রতিটি সাইজের আলাদা ছবি থাকতে পারে
-    }[];
-    // ------------------------------------------
+    
+    // --- আপনি যে ৩টি আলাদা ফিল্ড বানিয়েছেন ---
     size?: string
+    // ---------------------------------------
+
+    // --- Size Guide Image (নতুন যোগ করা হয়েছে) ---
+    size_guide?: string | { url: string }; 
+    // ------------------------------------------
+
     material?: string
     is_bestseller?: boolean
     is_new_arrival?: boolean
     is_combo?: boolean
     thakur_type?: string; 
     product_rating?: number;
+
+    // Repeater ফিল্ডটি রেখে দেওয়া হলো যদি ভবিষ্যতে লাগে, নাহলে এটি অপশনাল
+    product_variants?: {
+      variant_size: string;
+      variant_price: number;
+      variant_sale_price?: number;
+      variant_image?: string | { url: string };
+    }[];
   }
   _embedded?: {
     "wp:featuredmedia"?: {
@@ -61,21 +69,23 @@ export interface Product {
   gallery: { url: string; alt: string }[]
   price: number
   salePrice?: number
-  // --- Frontend-এ ভ্যারিয়েন্ট দেখানোর জন্য নতুন ফিল্ড ---
+  
+  // --- সাইজ গাইডের জন্য ---
+  size_guide?: string;
+  
+  // --- অন্যান্য সাইজের প্রোডাক্টের লিঙ্ক রাখার জন্য ---
   variants?: {
     size: string;
-    price: number;
-    salePrice?: number;
-    image?: string;
+    slug: string; // এখানে slug থাকবে কারণ ক্লিক করলে অন্য পেজে যাবে
   }[];
-  // ------------------------------------------------
+  
   size?: string
   material?: string
   isBestseller: boolean
   isNewArrival: boolean
   isCombo: boolean
   thakur_type?: string; 
-  rating?: number;      
+  rating?: number;       
   categories: { id: number; name: string; slug: string }[]
 }
 
