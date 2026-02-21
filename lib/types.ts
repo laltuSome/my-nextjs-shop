@@ -10,13 +10,21 @@ export interface WPProduct {
     price: number
     sale_price?: number
     product_gallery?: { url: string; alt: string }[]
+    // --- Variants (Repeater Field) Support ---
+    product_variants?: {
+      variant_size: string;
+      variant_price: number;
+      variant_sale_price?: number;
+      variant_image?: string | { url: string }; // প্রতিটি সাইজের আলাদা ছবি থাকতে পারে
+    }[];
+    // ------------------------------------------
     size?: string
     material?: string
     is_bestseller?: boolean
     is_new_arrival?: boolean
     is_combo?: boolean
-    thakur_type?: string;   // <--- WordPress field for Dress Type
-    product_rating?: number; // <--- WordPress field for Rating
+    thakur_type?: string; 
+    product_rating?: number;
   }
   _embedded?: {
     "wp:featuredmedia"?: {
@@ -53,13 +61,21 @@ export interface Product {
   gallery: { url: string; alt: string }[]
   price: number
   salePrice?: number
+  // --- Frontend-এ ভ্যারিয়েন্ট দেখানোর জন্য নতুন ফিল্ড ---
+  variants?: {
+    size: string;
+    price: number;
+    salePrice?: number;
+    image?: string;
+  }[];
+  // ------------------------------------------------
   size?: string
   material?: string
   isBestseller: boolean
   isNewArrival: boolean
   isCombo: boolean
-  thakur_type?: string; // <--- Frontend logic-er jonno
-  rating?: number;      // <--- Rating filter-er jonno
+  thakur_type?: string; 
+  rating?: number;      
   categories: { id: number; name: string; slug: string }[]
 }
 

@@ -1,7 +1,6 @@
 import type { Product, Category, WPProduct, WPCategory } from "./types"
 
 const WP_API_URL = "https://bhaktistore.sajadvertising.com/wp-json/wp/v2"
-const USE_MOCK = false 
 
 // --- WordPress API Helpers ---
 
@@ -20,50 +19,48 @@ function transformWPProduct(wp: WPProduct): Product {
     excerpt: wp.excerpt.rendered.replace(/<[^>]+>/g, ""),
     image: media?.source_url || "/images/products/dress-1.jpg",
     gallery: wp.acf?.product_gallery?.map((img: any) => ({ url: img.url, alt: img.alt })) || [],
-    price: wp.acf?.price || 0,
-    salePrice: wp.acf?.sale_price || undefined,
+    
+    // সরাসরি ACF ফিল্ড থেকে ডেটা নেওয়া (আপনার বানানো price, size, sale_price)
+    price: Number(wp.acf?.price || 0),
+    salePrice: wp.acf?.sale_price ? Number(wp.acf.sale_price) : undefined,
     size: wp.acf?.size || undefined,
+    
     material: wp.acf?.material || undefined,
     isBestseller: wp.acf?.is_bestseller || false,
     isNewArrival: wp.acf?.is_new_arrival || false,
     isCombo: wp.acf?.is_combo || false, 
-    // --- নুতন ফিল্ড যা ফিল্টারের জন্য লাগবে ---
-    thakur_type: wp.acf?.thakur_type || "", // ACF field name: thakur_type
-    rating: wp.acf?.product_rating || 0,   // ACF field name: product_rating
+    thakur_type: wp.acf?.thakur_type || "", 
+    rating: wp.acf?.product_rating || 0,   
     
     categories: terms.map((t: any) => ({ id: t.id, name: t.name, slug: t.slug })),
   }
 }
 
 /**
- * Transforms WordPress API category data into our local Category type
+ * একই নামের অন্য সাইজের প্রোডাক্টগুলো খুঁজে বের করার ফাংশন
+ * এটি টাইটেলের প্রথম অংশ দিয়ে সার্চ করে অন্য প্রোডাক্টের লিঙ্ক নিয়ে আসে
  */
-function transformWPCategory(wp: WPCategory, index: number): Category {
-  const defaultImages = [
-    "/images/categories/dresses.jpg",
-    "/images/categories/accessories.jpg",
-    "/images/categories/singhasan.jpg",
-    "/images/categories/festival.jpg",
-  ];
-  
-  let acfImage = "";
-  if (wp.acf?.category_image) {
-    if (typeof wp.acf.category_image === "string") {
-      acfImage = wp.acf.category_image;
-    } 
-    else if (typeof wp.acf.category_image === "object" && (wp.acf.category_image as any).url) {
-      acfImage = (wp.acf.category_image as any).url;
-    }
+export async function getProductVariants(currentProduct: Product): Promise<{size: string, slug: string}[]> {
+  try {
+    // টাইটেল থেকে মেইন নামটা বের করা (যেমন: "Laddu Gopal - 5" থেকে "Laddu Gopal" নেওয়া)
+    // হাইফেন (-) বা স্পেস থাকলে তার আগের অংশটুকু নেবে
+    const mainTitle = currentProduct.title.split('-')[0].split('|')[0].trim();
+    
+    const res = await fetch(`${WP_API_URL}/products?search=${encodeURIComponent(mainTitle)}&_embed=true`);
+    const data: WPProduct[] = await res.json();
+    
+    // বর্তমান লিস্ট থেকে সাইজ এবং স্লাগ বের করা
+    return data
+      .filter(wp => wp.acf?.size) // যাদের সাইজ দেওয়া আছে শুধু তাদের নেবে
+      .map(wp => ({
+        size: String(wp.acf.size),
+        slug: wp.slug
+      }))
+      .sort((a, b) => parseFloat(a.size) - parseFloat(b.size)); // সাইজ অনুযায়ী সাজানো
+  } catch (error) {
+    console.error("Variant fetch error:", error);
+    return [];
   }
-
-  return {
-    id: wp.id,
-    name: wp.name,
-    slug: wp.slug,
-    count: wp.count,
-    description: wp.description || "",
-    image: acfImage || defaultImages[index % defaultImages.length],
-  };
 }
 
 /**
@@ -77,9 +74,9 @@ export async function getProducts(params?: {
   bestseller?: boolean
   newArrival?: boolean
   combo?: boolean
-  material?: string   // Added material param
-  thakur?: string     // Added thakur param
-  rating?: number     // Added rating param
+  material?: string 
+  thakur?: string    
+  rating?: number    
 }): Promise<{ products: Product[]; total: number }> {
   
   try {
@@ -96,42 +93,26 @@ export async function getProducts(params?: {
     if (!res.ok) throw new Error("Failed to fetch products")
     const data: WPProduct[] = await res.json()
     
-    // 1. Map all data
     let products = data.map(transformWPProduct)
 
-    // 2. Filter by Category slug
     if (params?.category) {
       products = products.filter((p) => 
         p.categories.some((c) => c.slug === params.category)
       )
     }
 
-    // 3. Filter by Bestseller ACF
-    if (params?.bestseller) {
-      products = products.filter((p) => p.isBestseller)
-    }
+    if (params?.bestseller) products = products.filter((p) => p.isBestseller)
+    if (params?.newArrival) products = products.filter((p) => p.isNewArrival)
+    if (params?.combo) products = products.filter((p) => p.isCombo === true)
 
-    // 4. Filter by New Arrival ACF
-    if (params?.newArrival) {
-      products = products.filter((p) => p.isNewArrival)
-    }
-
-    // 5. Filter by Combo ACF
-    if (params?.combo) {
-      products = products.filter((p) => (p as any).isCombo === true)
-    }
-
-    // 6. Filter by Material (Backend Logic)
     if (params?.material) {
         products = products.filter((p) => p.material?.toLowerCase() === params.material?.toLowerCase())
     }
 
-    // 7. Filter by Thakur Type (Backend Logic)
     if (params?.thakur) {
-        products = products.filter((p) => (p as any).thakur_type?.toLowerCase() === params.thakur?.toLowerCase())
+        products = products.filter((p) => p.thakur_type?.toLowerCase() === params.thakur?.toLowerCase())
     }
 
-    // 8. Pagination
     const perPage = params?.perPage || 100
     const page = params?.page || 1
     const paginatedProducts = products.slice((page - 1) * perPage, page * perPage)
@@ -143,8 +124,6 @@ export async function getProducts(params?: {
   }
 }
 
-// ... বাকি ফাংশনগুলো (getProductBySlug, getCategories, etc.) আগের মতোই থাকবে।
-
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   try {
     const res = await fetch(`${WP_API_URL}/products?slug=${slug}&_embed=true`, {
@@ -155,7 +134,6 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     if (data.length === 0) return null
     return transformWPProduct(data[0])
   } catch (error) {
-    console.error("Slug fetch error:", error)
     return null
   }
 }
@@ -169,9 +147,25 @@ export async function getCategories(): Promise<Category[]> {
     const data: WPCategory[] = await res.json()
     return data.map((cat, index) => transformWPCategory(cat, index))
   } catch (error) {
-    console.error("Category fetch error:", error)
     return [] 
   }
+}
+
+function transformWPCategory(wp: WPCategory, index: number): Category {
+  const defaultImages = ["/images/categories/dresses.jpg", "/images/categories/accessories.jpg"];
+  let acfImage = "";
+  if (wp.acf?.category_image) {
+    acfImage = typeof wp.acf.category_image === "object" ? wp.acf.category_image?.url : wp.acf.category_image;
+  }
+
+  return {
+    id: wp.id,
+    name: wp.name,
+    slug: wp.slug,
+    count: wp.count,
+    description: wp.description || "",
+    image: acfImage || defaultImages[index % defaultImages.length],
+  };
 }
 
 export function getWhatsAppLink(product: Product): string {
