@@ -17,7 +17,7 @@ export function CategoryGrid({ categories }: CategoryGridProps) {
         <p className="mt-4 text-gray-600 font-medium">Find the perfect outfit for every occasion</p>
       </div>
 
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"> {/* ৩টি কলাম করা হয়েছে যাতে বক্স বড় দেখায় */}
+      <div className="grid gap-8 sm:grid-cols-1 lg:grid-cols-4"> {/* ৩টি কলাম করা হয়েছে যাতে বক্স বড় দেখায় */}
         {categories.map((cat) => (
           <Link
             key={cat.id}

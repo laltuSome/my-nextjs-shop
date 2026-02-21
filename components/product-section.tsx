@@ -38,7 +38,7 @@ export function ProductSection({ title, subtitle, products, viewAllHref }: Produ
       </div>
 
       {/* Grid Layout - Fixed 3 Columns on Desktop */}
-      <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+  <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <div key={product.id} className="group flex flex-col bg-white rounded-3xl border border-gray-100 p-4 hover:shadow-xl transition-all duration-300">
             
