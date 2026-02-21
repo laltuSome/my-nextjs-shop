@@ -50,22 +50,52 @@ function transformWPProduct(wp: WPProduct): Product {
 }
 
 /**
- * একই নামের অন্য সাইজের প্রোডাক্টগুলো খুঁজে বের করার ফাংশন
+ * একই সিরিজের অন্য সাইজের প্রোডাক্টগুলো খুঁজে বের করার ফাংশন
+ * এটি টাইটেলের প্রথম অংশ এবং ক্যাটাগরি একদম নিখুঁতভাবে চেক করবে
  */
 export async function getProductVariants(currentProduct: Product): Promise<{size: string, slug: string}[]> {
   try {
-    const mainTitle = currentProduct.title.split('-')[0].split('|')[0].trim();
+    // ১. টাইটেল থেকে মূল অংশ বের করা। যেমন: "Gopal Dress Red - 0" থেকে "Gopal Dress Red" নেওয়া।
+    // আমরা হাইফেন (-) এর আগের অংশটুকু নেব।
+    const mainTitle = currentProduct.title.split('-')[0].trim();
     
-    const res = await fetch(`${WP_API_URL}/products?search=${encodeURIComponent(mainTitle)}&_embed=true`);
+    // ২. বর্তমান প্রোডাক্টের ক্যাটাগরি আইডি নেওয়া
+    const categoryIds = currentProduct.categories.map(c => c.id).join(',');
+    
+    // ৩. এপিআই কল - ক্যাটাগরি এবং সার্চ টার্ম সহ
+    // আমরা ক্যাটাগরি লক করে দিচ্ছি যাতে অন্য ড্রেস না আসে
+    const res = await fetch(
+      `${WP_API_URL}/products?search=${encodeURIComponent(mainTitle)}&categories=${categoryIds}&_embed=true`
+    );
+    
     const data: WPProduct[] = await res.json();
     
-    return data
-      .filter(wp => wp.acf?.size) 
+    // ৪. কড়া ফিল্টারিং (Strict Filtering)
+    const variants = data
+      .filter(wp => {
+        const wpTitle = wp.title.rendered.toLowerCase();
+        const searchTitle = mainTitle.toLowerCase();
+        
+        // চেক করবে যে টাইটেলের প্রথম অংশটুকু একদম হুবহু মিলছে কি না
+        // এতে "Red" ড্রেস "Yellow" এর মধ্যে ঢুকবে না
+        const isExactMatch = wpTitle.startsWith(searchTitle);
+        
+        return wp.acf?.size && isExactMatch;
+      })
       .map(wp => ({
         size: String(wp.acf.size),
         slug: wp.slug
-      }))
-      .sort((a, b) => parseFloat(a.size) - parseFloat(b.size)); 
+      }));
+
+    // ৫. একই সাইজ দুইবার থাকলে ফিল্টার করা এবং সাইজ অনুযায়ী সাজানো
+    const uniqueVariants = Array.from(new Map(variants.map(v => [v.size, v])).values());
+    
+    return uniqueVariants.sort((a, b) => {
+        const sizeA = parseFloat(a.size) || 0;
+        const sizeB = parseFloat(b.size) || 0;
+        return sizeA - sizeB;
+    });
+
   } catch (error) {
     console.error("Variant fetch error:", error);
     return [];
