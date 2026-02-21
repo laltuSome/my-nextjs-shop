@@ -30,44 +30,52 @@ export default async function CategoryPage({ params }: Props) {
 
   return (
     <>
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <nav className="mb-4 flex items-center gap-2 text-sm text-muted-foreground" aria-label="Breadcrumb">
-          <Link href="/" className="hover:text-primary">Home</Link>
+      <section className="mx-auto max-w-7xl px-4 py-8">
+        
+        {/* 1. Breadcrumb First */}
+        <nav className="mb-4 flex items-center gap-2 text-sm font-medium text-muted-foreground" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-[#772237]">Home</Link>
           <span>/</span>
-          <span className="text-foreground">{categoryName}</span>
+          <span className="text-[#772237] font-bold">{categoryName}</span>
         </nav>
 
-        <Link
-          href="/"
-          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back to Home
-        </Link>
-
-        <div className="mb-10">
-          <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">{categoryName}</h1>
+        {/* 2. Title Second */}
+        <div className="mb-6">
+          <h1 className="font-serif text-4xl md:text-5xl font-black text-foreground uppercase tracking-tight">
+            {categoryName}
+          </h1>
           {category?.description && (
-            <p className="mt-2 text-muted-foreground">{category.description}</p>
+            <p className="mt-2 text-lg text-muted-foreground italic">{category.description}</p>
           )}
-          <p className="mt-1 text-sm text-muted-foreground">{products.length} products found</p>
+          <p className="mt-1 text-sm font-bold text-[#ed701d]">{products.length} Products Found</p>
         </div>
 
+        {/* 3. Banner Image Third (Placeholder for all categories) */}
+        <div className="relative w-full h-[200px] md:h-[300px]  overflow-hidden mb-10 ">
+          <img 
+            src="https://via.placeholder.com/1200x400/772237/ffffff?text=Premium+Collection" 
+            alt="Category Banner"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* 4. Product Grid */}
         {products.length > 0 ? (
-          <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-8 grid-cols-2 md:grid-cols-3">
             {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-4 py-20 text-center">
+          <div className="flex flex-col items-center gap-4 py-20 text-center bg-gray-50 rounded-3xl">
             <p className="text-lg text-muted-foreground">No products found in this category.</p>
-            <Link href="/products" className="text-sm text-primary hover:underline">
-              Browse all products
+            <Link href="/" className="font-bold text-[#772237] underline">
+              Back to Home
             </Link>
           </div>
         )}
       </section>
+      
       <WhatsAppFloat />
     </>
   )

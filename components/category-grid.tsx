@@ -8,33 +8,42 @@ interface CategoryGridProps {
 
 export function CategoryGrid({ categories }: CategoryGridProps) {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16">
-      <div className="mb-10 text-center">
-        <h2 className="font-serif text-3xl font-bold text-foreground md:text-4xl">
+    <section className="mx-auto max-w-7xl px-4 py-20"> {/* প্যাডিং বাড়িয়ে দেওয়া হয়েছে */}
+      <div className="mb-12 text-center">
+        <h2 className="text-3xl md:text-4xl font-serif font-black text-[#772237]">
           Shop by Category
         </h2>
-        <p className="mt-2 text-muted-foreground">Find the perfect outfit for every occasion</p>
+       
+        <p className="mt-4 text-gray-600 font-medium">Find the perfect outfit for every occasion</p>
       </div>
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"> {/* ৩টি কলাম করা হয়েছে যাতে বক্স বড় দেখায় */}
         {categories.map((cat) => (
           <Link
             key={cat.id}
             href={`/category/${cat.slug}`}
-            className="group relative overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-xl"
+            className="group relative overflow-hidden rounded-[2.5rem] shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-2"
           >
-            <div className="relative aspect-[4/3]">
+            {/* Aspect Ratio পরিবর্তন করে ১:১ (Square) বা ৩:৪ করা হয়েছে বড় দেখানোর জন্য */}
+            <div className="relative aspect-[4/5] w-full"> 
               <Image
                 src={cat.image}
                 alt={cat.name}
                 fill
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#772237]/90 via-transparent to-transparent opacity-80 transition-opacity group-hover:opacity-100" />
             </div>
-            <div className="absolute inset-x-0 bottom-0 p-4 text-[#fff]">
-              <h3 className="text-lg font-bold">{cat.name}</h3>
-              <p className="mt-0.5 text-sm opacity-80">{cat.count} Products</p>
+
+            <div className="absolute inset-x-0 bottom-0 p-8 text-white text-center">
+              <h3 className="text-2xl font-medium capitalize  drop-shadow-md">
+                {cat.name}
+              </h3>
+              <div className="mt-2 inline-block rounded-full bg-[#ed701d] px-4 py-1 text-xs font-bold uppercase tracking-widest">
+                {cat.count} Items
+              </div>
             </div>
           </Link>
         ))}

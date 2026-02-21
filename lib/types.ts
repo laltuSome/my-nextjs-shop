@@ -14,7 +14,9 @@ export interface WPProduct {
     material?: string
     is_bestseller?: boolean
     is_new_arrival?: boolean
-    
+    is_combo?: boolean
+    thakur_type?: string;   // <--- WordPress field for Dress Type
+    product_rating?: number; // <--- WordPress field for Rating
   }
   _embedded?: {
     "wp:featuredmedia"?: {
@@ -37,7 +39,7 @@ export interface WPCategory {
   description: string;
   parent: number;
   acf?: {
-    category_image?: any; // এখানে any দিলে এটি সব ফরম্যাট একসেপ্ট করবে
+    category_image?: any; 
   };
 }
 
@@ -55,6 +57,9 @@ export interface Product {
   material?: string
   isBestseller: boolean
   isNewArrival: boolean
+  isCombo: boolean
+  thakur_type?: string; // <--- Frontend logic-er jonno
+  rating?: number;      // <--- Rating filter-er jonno
   categories: { id: number; name: string; slug: string }[]
 }
 
